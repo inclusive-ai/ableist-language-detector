@@ -1,6 +1,6 @@
 """Module with functions to extract ability vs. skills terms from ONET data."""
 
-from typing import Iterable, Tuple, List
+from typing import Iterable, Tuple, List, Union
 from collections import Counter
 from pathlib import Path
 import click
@@ -11,70 +11,125 @@ import spacy
 nlp = spacy.load("en_core_web_sm")
 
 
-def get_verbs(spacy_doc: spacy.tokens.Doc) -> List[spacy.tokens.Token]:
+def is_verb(token: spacy.tokens.Token) -> bool:
+    """Return True if the token is a non-auxiliary verb, else return False.
+
+    Parameters
+    ----------
+    token : spacy.tokens.Token
+        spacy token
+
+    Returns
+    -------
+    bool
+        True if the token is a non-auxiliary verb, else False
+    """
+    if token.pos_ == "VERB" and token.dep_ not in {"aux", "auxpass", "neg"}:
+        return True
+    return False
+
+
+def is_object(token: spacy.tokens.Token) -> bool:
+    """Return True if the token is a noun object, else return False.
+
+    Parameters
+    ----------
+    token : spacy.tokens.Token
+        spacy token
+
+    Returns
+    -------
+    bool
+        True if the token is a noun object, else False
+    """
+    if token.pos_ == "NOUN" and token.dep_ == "dobj":  # direct object dependency tag
+        return True
+    return False
+
+
+def get_verbs(
+    spacy_doc: spacy.tokens.Doc, return_lemma: bool = True
+) -> List[Union[str, spacy.tokens.Token]]:
     """Return a list of verb lemmas within a given document.
 
     Parameters
     ----------
     spacy_doc : spacy.tokens.Doc
         spaCy document to parse
+    return_lemma : bool, optional
+        If true, return the string lemmas instead of the spaCy token objects,
+        by default True
 
     Returns
     -------
-    List[spacy.tokens.Token]
-        List of verb lemmas within the document
+    List[Union[str, spacy.tokens.Token]]
+        A list of tokens or string lemmas
     """
-    # TODO: Consider retuning the token instead, which contains the raw text as well
-    # as the lemma
-    verbs = [
-        token.lemma_
-        for token in spacy_doc
-        if token.pos_ == "VERB"
-        and token.dep_ not in {"aux", "auxpass", "neg"}  # remove auxiliary verbs
-    ]
+    verbs = [token for token in spacy_doc if is_verb(token)]
+    if return_lemma:
+        return [token.lemma_ for token in verbs]
     return verbs
 
 
-def get_objects(spacy_doc: spacy.tokens.Doc) -> List[spacy.tokens.Token]:
+def get_objects(
+    spacy_doc: spacy.tokens.Doc, return_lemma: bool = True
+) -> List[Union[str, spacy.tokens.Token]]:
     """Return a list of noun objects within a given document.
 
     Parameters
     ----------
     spacy_doc : spacy.tokens.Doc
         spaCy document to parse
+    return_lemma : bool, optional
+        If true, return the string lemmas instead of the spaCy token objects,
+        by default True
 
     Returns
     -------
-    List[spacy.tokens.Token]
-        List of noun objects within the document
+    List[Union[str, spacy.tokens.Token]]
+        A list of tokens or string lemmas
     """
-    # TODO: Consider retuning the token instead, which contains the raw text as well
-    # as the lemma
-    noun_objects = [
-        token.lemma_
-        for token in spacy_doc
-        if token.pos_ == "NOUN" and token.dep_ == "dobj"  # direct object dependency tag
-    ]
+    noun_objects = [token for token in spacy_doc if is_object(token)]
+    if return_lemma:
+        return [token.lemma_ for token in noun_objects]
     return noun_objects
 
 
-def get_nouns(spacy_doc: spacy.tokens.Doc) -> List[spacy.tokens.Token]:
+def get_nouns(
+    spacy_doc: spacy.tokens.Doc, return_lemma: bool = True
+) -> List[Union[str, spacy.tokens.Token]]:
     """Return a list of nouns within a given document.
 
     Parameters
     ----------
     spacy_doc : spacy.tokens.Doc
         spaCy document to parse
+    return_lemma : bool, optional
+        If true, return the string lemmas instead of the spaCy token objects,
+        by default True
 
     Returns
     -------
-    List[spacy.tokens.Token]
-        List of nouns within the document
+    List[Union[str, spacy.tokens.Token]]
+        A list of tokens or string lemmas
     """
-    # TODO: Consider retuning the token instead, which contains the raw text as well
-    # as the lemma
-    nouns = [token.lemma_ for token in spacy_doc if token.pos_ == "NOUN"]
+    nouns = [token for token in spacy_doc if token.pos_ == "NOUN"]
+    if return_lemma:
+        return [token.lemma_ for token in nouns]
     return nouns
+
+
+def get_verb_phrases(spacy_doc: spacy.tokens.Doc):
+    # inspired by: https://github.com/explosion/spaCy/blob/master/spacy/lang/en/syntax_iterators.py
+    # for i, token in enumerate(spacy_doc):
+    #     if is_verb(token):
+    #         # go the right and check if it's an object
+    verb_phrases = []
+    for token in spacy_doc:
+        if token.dep_ == "dobj":
+            phrase = [token.head, [child for child in token.children], token]
+            verb_phrases.append(phrase)
+    return verb_phrases
 
 
 def get_abilities(df: pd.DataFrame) -> pd.DataFrame:
