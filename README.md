@@ -1,9 +1,9 @@
 # [wip] ability-skills-decoder
 Tool to identify ableist language in job descriptions.
 
-**What is ableist language?** [source](https://pwd.org.au/resources/disability-info/language-guide/ableist-language/)
+**What is ableist language?**
 
-> Ableist language is language that is offensive to people with disability. It can also refer to language that is derogatory, abusive or negative about disability. Ableism is the systemic exclusion and oppression of people with disability, often expressed and reinforced through language.
+> Ableist language is language that is offensive to people with disability. It can also refer to language that is derogatory, abusive or negative about disability. Ableism is the systemic exclusion and oppression of people with disability, often expressed and reinforced through language. [[source]](https://pwd.org.au/resources/disability-info/language-guide/ableist-language/)
 
 **Why is this tool important?**
 
