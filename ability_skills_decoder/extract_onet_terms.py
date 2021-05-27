@@ -1,135 +1,16 @@
 """Module with functions to extract ability vs. skills terms from ONET data."""
 
-from typing import Iterable, Tuple, List, Union
+from typing import Iterable, Tuple
 from collections import Counter
 from pathlib import Path
 import click
 import pandas as pd
 import spacy
 
+from ability_skills_decoder import utils
+
 
 nlp = spacy.load("en_core_web_sm")
-
-
-def is_verb(token: spacy.tokens.Token) -> bool:
-    """Return True if the token is a non-auxiliary verb, else return False.
-
-    Parameters
-    ----------
-    token : spacy.tokens.Token
-        spacy token
-
-    Returns
-    -------
-    bool
-        True if the token is a non-auxiliary verb, else False
-    """
-    if token.pos_ == "VERB" and token.dep_ not in {"aux", "auxpass", "neg"}:
-        return True
-    return False
-
-
-def is_object(token: spacy.tokens.Token) -> bool:
-    """Return True if the token is a noun object, else return False.
-
-    Parameters
-    ----------
-    token : spacy.tokens.Token
-        spacy token
-
-    Returns
-    -------
-    bool
-        True if the token is a noun object, else False
-    """
-    if token.pos_ == "NOUN" and token.dep_ == "dobj":  # direct object dependency tag
-        return True
-    return False
-
-
-def get_verbs(
-    spacy_doc: spacy.tokens.Doc, return_lemma: bool = True
-) -> List[Union[str, spacy.tokens.Token]]:
-    """Return a list of verb lemmas within a given document.
-
-    Parameters
-    ----------
-    spacy_doc : spacy.tokens.Doc
-        spaCy document to parse
-    return_lemma : bool, optional
-        If true, return the string lemmas instead of the spaCy token objects,
-        by default True
-
-    Returns
-    -------
-    List[Union[str, spacy.tokens.Token]]
-        A list of tokens or string lemmas
-    """
-    verbs = [token for token in spacy_doc if is_verb(token)]
-    if return_lemma:
-        return [token.lemma_ for token in verbs]
-    return verbs
-
-
-def get_objects(
-    spacy_doc: spacy.tokens.Doc, return_lemma: bool = True
-) -> List[Union[str, spacy.tokens.Token]]:
-    """Return a list of noun objects within a given document.
-
-    Parameters
-    ----------
-    spacy_doc : spacy.tokens.Doc
-        spaCy document to parse
-    return_lemma : bool, optional
-        If true, return the string lemmas instead of the spaCy token objects,
-        by default True
-
-    Returns
-    -------
-    List[Union[str, spacy.tokens.Token]]
-        A list of tokens or string lemmas
-    """
-    noun_objects = [token for token in spacy_doc if is_object(token)]
-    if return_lemma:
-        return [token.lemma_ for token in noun_objects]
-    return noun_objects
-
-
-def get_nouns(
-    spacy_doc: spacy.tokens.Doc, return_lemma: bool = True
-) -> List[Union[str, spacy.tokens.Token]]:
-    """Return a list of nouns within a given document.
-
-    Parameters
-    ----------
-    spacy_doc : spacy.tokens.Doc
-        spaCy document to parse
-    return_lemma : bool, optional
-        If true, return the string lemmas instead of the spaCy token objects,
-        by default True
-
-    Returns
-    -------
-    List[Union[str, spacy.tokens.Token]]
-        A list of tokens or string lemmas
-    """
-    nouns = [token for token in spacy_doc if token.pos_ == "NOUN"]
-    if return_lemma:
-        return [token.lemma_ for token in nouns]
-    return nouns
-
-
-def get_verb_phrases(spacy_doc: spacy.tokens.Doc):
-    # inspired by: https://github.com/explosion/spaCy/blob/master/spacy/lang/en/syntax_iterators.py
-    # for i, token in enumerate(spacy_doc):
-    #     if is_verb(token):
-    #         # go the right and check if it's an object
-    verb_phrases = []
-    for token in spacy_doc:
-        if token.dep_ == "dobj":
-            phrase = [token.head, [child for child in token.children], token]
-            verb_phrases.append(phrase)
-    return verb_phrases
 
 
 def get_abilities(df: pd.DataFrame) -> pd.DataFrame:
@@ -207,9 +88,9 @@ def get_representative_terms(
     # TODO: Could refine by only retrieving verbs that occur at the start of the
     # description, i.e. only capture the main verb used in the skill/ability
     for doc in nlp.pipe(abilities_corpus):
-        abilities_verbs.extend(get_verbs(doc))
+        abilities_verbs.extend(utils.get_verbs(doc))
     for doc in nlp.pipe(skills_corpus):
-        skills_verbs.extend(get_verbs(doc))
+        skills_verbs.extend(utils.get_verbs(doc))
 
     # Get counts for each verb; will be useful for ranking later
     abilities_verbs_counter = Counter(abilities_verbs)
@@ -247,7 +128,7 @@ def get_objects_corpus(corpus: Iterable[str]) -> list:
     """
     noun_objects = []
     for doc in nlp.pipe(corpus):
-        noun_objects.extend(get_objects(doc))
+        noun_objects.extend(utils.get_objects(doc))
     return list(set(noun_objects))
 
 
@@ -267,7 +148,7 @@ def get_nouns_corpus(corpus: Iterable[str]) -> list:
     """
     nouns = []
     for doc in nlp.pipe(corpus):
-        nouns.extend(get_nouns(doc))
+        nouns.extend(utils.get_nouns(doc))
     return list(set(nouns))
 
 
