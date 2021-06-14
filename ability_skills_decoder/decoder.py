@@ -94,18 +94,6 @@ def find_ableist_language(
     return matched_verbs + matched_verb_phrases
 
 
-def print_results(results):
-    for ableist_term in results:
-        if isinstance(ableist_term, spacy.tokens.Span):
-            print(
-                f"start: {ableist_term.start}, end: {ableist_term.end}, phrase: {ableist_term}, lemma: {ableist_term.lemma_}"
-            )
-        else:
-            print(
-                f"start: {ableist_term.i}, phrase: {ableist_term}, lemma: {ableist_term.lemma_}"
-            )
-
-
 @click.command()
 @click.option(
     "--job_description_file",
