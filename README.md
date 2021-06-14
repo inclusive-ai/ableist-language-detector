@@ -43,7 +43,7 @@ pip install -r requirements_dev.txt
 To identify ableist language in a job description, pass a `.txt` file containing the job description text to the `deocder.py` script:
 
 ```
-python decoder.py --j /path/to/job_description.txt
+python decoder.py -j /path/to/job_description.txt
 ```
 
 The script will print out any ableist language that was detected in the job description, along with the location of the language (index position in the text) and the root form of the terms.
