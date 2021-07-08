@@ -1,0 +1,48 @@
+version: '3'
+services:
+  mlflow_registry:
+    build: .
+    working_dir: /app
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:5000"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    command: runServer.sh
+
+  train_model: #
+    build: .
+    working_dir: /app
+    volumes:
+      - .:/app
+    links:
+      - "localhost:mlflow_registry"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow_registry:5000
+    depends_on:
+      mlflow_registry:
+        condition: service_healthy
+    command: ["python", "ability_skills_decoder/decoder_mlflow_registry.py", "-j", "sample_data/usa-jobs-astronomer.json"]
+
+  serve_model:
+    build: .
+    depends_on:
+      mlflow_registry:
+        condition: service_healthy
+      train_model:
+        condition: service_completed_successfully
+    working_dir: /app
+    ports:
+      - "1234:1234"
+    volumes:
+      - .:/app
+    links:
+      - "mlflow_registry:mlflow_registry"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow_registry:5000
+    command: ["serveModel.sh", "models:/analyzer_model/Staging"]
