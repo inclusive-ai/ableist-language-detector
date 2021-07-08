@@ -27,7 +27,6 @@ class MLflowLanguageModel(mlflow.pyfunc.PythonModel):
 
         input_text = self.load_text(model_input['input'][0])
         properties = model_input['properties'][0]
-        attributes = ['text'] + properties
         results = self.func(input_text)
 
         terms = {}
@@ -37,17 +36,19 @@ class MLflowLanguageModel(mlflow.pyfunc.PythonModel):
                     f"PHRASE: {ableist_term} | LEMMA: {ableist_term.lemma_} | "
                     f"POSITION: {ableist_term.start}:{ableist_term.end}"
                 )
-                terms[ableist_term.start:ableist_term.end] = dict()
-                for at in attributes:
-                    terms[ableist_term.start:ableist_term.end][at] = getattr(ableist_term, at)
+                terms[f"{ableist_term.start}:{ableist_term.end}"] = dict()
+                terms[f"{ableist_term.start}:{ableist_term.end}"]['ableist_term'] = str(ableist_term)
+                for at in properties:
+                    terms[f"{ableist_term.start}:{ableist_term.end}"][at] = getattr(ableist_term, at)
             else:
                 print(
                     f"PHRASE: {ableist_term} | LEMMA: {ableist_term.lemma_} | "
                     f"POSITION: {ableist_term.i}"
                 )
-                terms[ableist_term.i] = dict()
-                for at in attributes:
-                    terms[ableist_term.i][at] = getattr(ableist_term, at)
+                terms[str(ableist_term.i)] = dict()
+                terms[str(ableist_term.i)]['ableist_term'] = str(ableist_term)
+                for at in properties:
+                    terms[str(ableist_term.i)][at] = getattr(ableist_term, at)
         return terms
 
 
