@@ -1,0 +1,2 @@
+[{"input_file":"sample_data/sample.txt",
+  "properties": ["lemma", "text", "start", "end", "alternative_verbs", "example"]}]
