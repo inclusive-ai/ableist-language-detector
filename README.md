@@ -96,3 +96,78 @@ PHRASE: move your hands | LEMMA: move your hand | POSITION: 8:11 | ALTERNATIVES:
 Match #4
 PHRASE: move your wrists | LEMMA: move your wrist | POSITION: 32:35 | ALTERNATIVES: ['observe', 'operate', 'transport', 'transfer', 'activate'] | EXAMPLE: Operates a machine using a lever
 ```
+
+## Basic usage with mlflow
+
+Building an mlflow model will allow for usage with a REST API when a server is running.
+
+### Example using the Python API
+
+Pass a `.json` file specifying the job description file and requested parameters to the `detector_mlflow_local.py` script:
+
+```
+python detector_mlflow_local.py -j /path/to/job_info.json
+```
+
+Example via command line for the included data in `sample_data`:
+
+```python
+from ableist_language_detector import detector_mlflow_local as dml
+from ableist_language_detector import detector
+import json
+import mlflow
+import pandas as pd
+
+job_file_json = 'sample_data/sample.json'
+
+model_path = 'detector_model'
+
+# Construct and save the model if one does not exist
+try:
+    analyzer = dml.MLflowLanguageModel(detector.find_ableist_language)
+    mlflow.pyfunc.save_model(path=model_path, python_model=analyzer)
+    print("Generating new model in path {}".format(model_path))
+
+except:
+    print("Using existing model in path {}".format(model_path))
+    pass
+
+# Load model
+local_model = mlflow.pyfunc.load_model(model_uri=model_path)
+
+# Analyze job description
+with open(job_file_json) as f:
+      data = json.loads(f.read())
+      model_input = pd.json_normalize(data)
+
+local_output = local_model.predict(model_input)
+
+```
+`local_output` is a nested dict with keys of start position and values of dicts
+for the properties listed in the input `.json` file.
+
+### Example using a REST API
+
+Once a model is saved in the defined path, you can also utilize the REST API with the included shell scripts (after they are made executable).
+
+Serve an input model to port 1234:
+
+```
+./serveModel.sh detector_model
+```
+
+Once the model is served, in a separate shell run the predict script defining the input json file specify in the job description file to analyze and the requested properties, for example:
+
+```
+./predictAPI.sh sample_data/sample.json
+```
+or
+```
+./predictAPI.sh sample_data/usa-jobs-astronomer.json
+```
+
+which yields:
+
+```
+{"558": {"lemma": "carry", "text": "carry", "start": "558", "end": "559", "alternative_verbs": "['move', 'install', 'operate', 'manage', 'put', 'place', 'transfer', 'transport']", "example": "Transport boxes from shipping dock to truck"}, "1107": {"lemma": "lift", "text": "lift", "start": "1107", "end": "1108", "alternative_verbs": "['move', 'install', 'operate', 'manage', 'put', 'place', 'transfer', 'transport']", "example": "Transport boxes from shipping dock to truck"}, "1631": {"lemma": "see", "text": "see", "start": "1631", "end": "1632", "alternative_verbs": "['assess', 'comprehend', 'discover', 'distinguish', 'detect', 'evaluate', 'find', 'identify', 'interpret', 'observe', 'recognize', 'understand']", "example": "Observe any cars illegally parked in the loading zone"}, "1695": {"lemma": "see", "text": "see", "start": "1695", "end": "1696", "alternative_verbs": "['assess', 'comprehend', 'discover', 'distinguish', 'detect', 'evaluate', 'find', 'identify', 'interpret', 'observe', 'recognize', 'understand']", "example": "Observe any cars illegally parked in the loading zone"}}
+```
