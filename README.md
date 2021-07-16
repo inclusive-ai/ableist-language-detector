@@ -109,7 +109,7 @@ Pass a `.json` file specifying the job description file and requested parameters
 python detector_mlflow_local.py -j /path/to/job_info.json
 ```
 
-Example via command line for the included data in `sample_data`:
+Example via python shell for the included data in `sample_data`:
 
 ```python
 from ableist_language_detector import detector_mlflow_local as dml

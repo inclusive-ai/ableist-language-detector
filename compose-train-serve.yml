@@ -1,0 +1,20 @@
+version: '3'
+services:
+  train_model: #
+    build: .
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["python", "ableist_language_detector/detector_mlflow_local.py", "-j", "sample_data/usa-jobs-astronomer.json"]
+
+  serve_model:
+    build: .
+    depends_on:
+      train_model:
+        condition: service_completed_successfully
+    working_dir: /app
+    ports:
+      - "1234:1234"
+    volumes:
+      - .:/app
+    command: ["serveModel.sh", "detector_model"]
